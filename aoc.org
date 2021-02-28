@@ -1,0 +1,419 @@
+* Advent of Code 2020
+
+
+  
+** Goals
+
+ - I would like to write the whole thing (or as much as possible) in Lisp. Where
+   that fails, I may try to use C.
+
+** Resources
+
+   - see this [[https://stackoverflow.com/q/25652002/1456421][this SO post]] for reading in data.
+   - See [[https://lispcookbook.github.io/cl-cookbook/iteration.html][lisp cookbook]] for examples of how to use ~LOOP~
+
+** Utilities
+   :PROPERTIES:
+   :ID:       0B64C670-1156-4BFB-838B-B85F9F9F234C
+   :END:
+
+
+   #+begin_src lisp :exports both :results output :tangle my-utils.lisp
+     (defparameter *aoc-dir* "code/aoc20/inputs/")
+
+     (defun get-puzzle-input-fpath (fname)
+       "Return ~/code/aoc20/inputs/FNAME"
+       (concatenate 'string (namestring (user-homedir-pathname)) *aoc-dir* fname))
+
+     (defun form-length (quoted-form)
+       (length (princ-to-string quoted-form)))
+
+     (defun longest-form-length (&rest quoted-forms)
+       (loop for f in quoted-forms maximizing (form-length f)))
+
+     (defun verbosify1 (form tablength result)
+       "Tries to keep everything on one line."
+       (format t "~a~v,0t : -> ~a~%" form tablength result))
+
+     (defun verbosify2 (form result)
+       "Two-line formatting"
+       (format t "~a~%~2t : -> ~a~%" form result))
+
+     (defmacro verbose1 (&body forms)
+       (let ((len-name (gensym)))
+         `(let ((,len-name (apply #'longest-form-length ',forms)))
+            (progn
+              ,@(loop for form in forms
+                   collect `(verbosify1 ',form ,len-name ,form))))))
+
+     (defmacro verbose2 (&body forms)
+       `(progn
+          ,@(loop for form in forms
+               collect `(verbosify2 ',form ,form))))
+
+     (defun read-file (filename &optional (reader #'read-line))
+       "Read a file from FILENAME and return it as a list of lines."
+       (with-open-file (data (get-puzzle-input-fpath filename))
+         (loop for line = (funcall reader data nil)
+            while line collect line)))
+
+   #+end_src
+
+   #+RESULTS:
+  
+** Day 1
+   :PROPERTIES:
+   :ID:       F7024D2A-1593-402A-B1D1-7EF42D3C984D
+   :END:
+
+
+    #+begin_src lisp :exports both :results output :tangle day01.lisp
+      (load "my-utils.lisp")
+
+      (defun day1-part1 ()
+        ""
+        (let ((d1-input (read-file "d1.txt" #'read)))
+          (loop named outer-loop
+             for a in d1-input
+             do (loop for b in d1-input
+                   when (= (+ a b) 2020)
+                   do (return-from outer-loop (* a b))))))
+
+
+      (defun day1-part1-method2 ()
+        (block loops
+          (let ((d1-input (read-file "d1.txt" #'read)))
+            (dolist (a d1-input)
+              (dolist (b d1-input)
+                (when (= (+ a b) 2020)
+                  (return-from loops (* a b))))))))
+
+      (defun day1-part2 ()
+        (block loops
+          (let ((d1-input (read-file "d1.txt" #'read)))
+            (dolist (a d1-input)
+              (dolist (b d1-input)
+                (dolist (c d1-input)
+                  (when (= (+ a b c) 2020)
+                    (return-from loops (* a b c)))))))))
+
+      (verbose1
+        (day1-part1)
+        (day1-part1-method2)
+        (day1-part2))
+    #+end_src
+
+    #+RESULTS:
+    : (DAY1-PART1)         : -> 870331
+    : (DAY1-PART1-METHOD2) : -> 870331
+    : (DAY1-PART2)         : -> 283025088
+    
+** Day 2
+   :PROPERTIES:
+   :ID:       FCD2425A-5628-44EB-8AD9-22E127A8A051
+   :END:
+
+    #+begin_src lisp :exports both :results output :tangle day02.lisp
+      (load "my-utils.lisp")
+
+      (defparameter *day2* (read-file "d2.txt"))
+
+      (defun parse-toboggan-password (line)
+        (let ((hyphen-loc (search "-" line))
+              (colon-loc (search ": " line)))
+          (list
+           (parse-integer (subseq line 0 hyphen-loc))
+           (read-from-string (subseq line (1+ hyphen-loc)))
+           (subseq line (1- colon-loc) colon-loc)
+           (subseq line (+ 2 colon-loc)))))
+
+      (defun count-char-occurence (password letter)
+        (count-if #'(lambda (c) (string= c letter)) password))
+
+      (defun letter-count-in-bounds-p (lower upper letter-count)
+        (<= lower letter-count upper))
+
+      (defun p1-valid-password-p (line)
+        (let* ((parsed (parse-toboggan-password line))
+               (lower (first parsed))
+               (upper (second parsed))
+               (letter (third parsed))
+               (password (fourth parsed)))
+          (letter-count-in-bounds-p
+           lower upper (count-char-occurence
+                        password letter))))
+
+      (defun extract-letter-from-position (string pos)
+        "Note that this is one-indexed as the challenge demands!"
+        (subseq string (1- pos) pos))
+
+      (defun xor (a b)
+        (and (or a b) (not (and a b))))
+
+
+      (defun p2-valid-password-p (line)
+        (let* ((parsed (parse-toboggan-password line))
+               (pos1 (first parsed))
+               (pos2 (second parsed))
+               (letter (third parsed))
+               (password (fourth parsed))
+               (letter1 (extract-letter-from-position password pos1))
+               (letter2 (extract-letter-from-position password pos2)))
+          (xor (string= letter1 letter) (string= letter2 letter))))
+
+      (defun day2-part1 ()
+        (count-if #'p1-valid-password-p *day2*))
+
+      (defun day2-part2 ()
+        (count-if #'p2-valid-password-p *day2*))
+
+      (verbose1
+        (day2-part1)
+        (day2-part2))
+    #+end_src
+
+    #+RESULTS:
+    : (DAY2-PART1) : -> 418
+    : (DAY2-PART2) : -> 616
+
+    
+** Day 3
+   :PROPERTIES:
+   :ID:       B4D0AF4C-D061-4E67-BDBA-D3A11E4A62E1
+   :END:
+
+   #+begin_src lisp :exports both :results output :tangle day03.lisp
+     (load "my-utils.lisp")
+
+     (defun get-char-at-pos (line pos)
+       (subseq line pos (1+ pos)))
+
+     (defun tree-p (line pos)
+       (string= "#" (get-char-at-pos line pos)))
+
+     (defun build-col-positions (nrows ncols slope)
+       "Builds column positions for ski slope. SLOPE should be a cons cell
+        corresponding with (right . down)."
+       (loop for i from 0 to (ceiling (/ (1- nrows) (cdr slope)))
+          collect (mod (* i (car slope)) ncols)))
+
+     (defun row-subset (seq every-other)
+       (cond ((< every-other 1) nil)
+             ((= every-other 1) seq)
+             (t (loop for x in seq
+                   for i from 0
+                   if (= (mod i every-other) 0)
+                   collect x))))
+
+     (defun find-num-trees (data slope)
+       "Find the number of trees you'd run into. SLOPE is a cons cell with
+        entries (RIGHT . DOWN)."
+       (let* ((nr (length data))        ; nrows
+              (nc (length (car data)))) ; ncols
+         (count t (mapcar #'tree-p (row-subset data (cdr slope))
+                          (build-col-positions nr nc slope)))))
+
+     (defun day3-part1 ()
+       (find-num-trees (read-file "d3.txt") (cons 3 1)))
+
+     (defun day3-part2 ()
+       (let ((day3 (read-file "d3.txt"))
+             (slopes (list (cons 1 1) (cons 3 1) (cons 5 1) (cons 7 1) (cons 1 2))))
+         (apply #'* (loop for slope in slopes collect (find-num-trees day3 slope)))))
+
+     (verbose1
+       (day3-part1)
+       (day3-part2))
+   #+end_src
+
+   #+RESULTS:
+   : (DAY3-PART1) : -> 169
+   : (DAY3-PART2) : -> 7560370818
+
+** Day 4
+   :PROPERTIES:
+   :ID:       3AE5B0B0-212A-4A27-989C-A4416BA78EC9
+   :END:
+
+   #+begin_src lisp :exports both :results output :tangle day04.lisp
+     (load "my-utils.lisp")
+
+     (defparameter
+         ,*required-fields* (list "byr" "iyr" "eyr" "hgt" "hcl" "ecl" "pid")
+       "Field names that must be contained in a passport.")
+
+     (defun get-colon-positions (string &optional (start 0))
+       "Recursively return a list of indices corresponding to the colons in STRING."
+       (let ((start (position #\: string :start start)))
+         (cond (start (apply #'list start (get-colon-positions string (1+ start))))
+               (t nil))))
+
+     (defun get-field (string colon-loc)
+       "Return the passport field associated with a given COLON-LOC."
+       (subseq string (- colon-loc 3) colon-loc))
+
+     (defun concat-strings (list)
+       "Join a list of strings into one, separated by spaces."
+       (if (and (listp list) (every #'stringp list))
+           (with-output-to-string (s)
+             (format s "~{~a~^ ~}" list))))
+
+     (defun get-fields-from-string (string)
+       "Return a list of all found passport fields in STRING."
+       (mapcar #'(lambda (colon-loc) (get-field string colon-loc))
+               (get-colon-positions string)))
+
+     (defun get-fields-from-batch (batch)
+       "Return a list of all found passport fields in BATCH. (helper function.)"
+       (get-fields-from-string (concat-strings (reverse batch))))
+
+     (defun on-fields (func fields)
+       "Apply FUNC using FIELDS as the sequence against which to test membership."
+       (funcall func #'(lambda (x) (member x fields :test #'string=)) *required-fields*))
+
+     (defun num-required-fields (fields)
+       "Count number of required fields found in FIELDS."
+       (on-fields #'count-if fields))
+
+     (defun contains-required-fields-p (fields)
+       "Return T if all required passport fields were found in FIELDS; NIL otherwise."
+       (on-fields #'every fields))
+
+     (defun required-fields-p (line)
+       "Return T if line contains all required passport fields (cf. *required-fields*)."
+       (contains-required-fields-p (get-fields-from-string line)))
+
+     ;; note: for some reason the last batch was not being processed by loop; we need
+     ;; to collect it manually using this extra (slightly ugly) code.
+     (defun traverse-collecting-field-names (data)
+       (let* ((batch nil)
+              (results
+               (loop for line in data
+                  if (string= line "")
+                  collect (get-fields-from-batch batch)
+                  and do (setf batch nil)
+                  else do (push line batch))))
+         (cond (batch (append results (list (get-fields-from-batch batch))))
+               (t results))))
+
+          ;;; code for part 2
+
+     (defun lineify (data)
+       "Transform DATA so that one passport entry corresponds with one string in the returned list."
+       (let* ((batch nil)
+              (results
+               (loop for line in data
+                  if (string= line "")
+                  collect (concat-strings (reverse batch))
+                  and do (setf batch nil)
+                  else do (push line batch))))
+         (cond (batch (append results (list (concat-strings (reverse batch)))))
+               (t results))))
+
+     (defun whitespacep (c)
+       "Return T if C is a space or newline character."
+       (or (char= c #\Space) (char= c #\Newline)))
+
+     (defun colonp (c)
+       "Return T if C is a colon character."
+       (char= c #\:))
+
+     (defun split-string (string &optional (predicate #'whitespacep))
+       "Split STRING into multiple strings at the locations determined by
+             PREDICATE. Default is to split at spaces/newlines."
+       (let ((locs (loop for c across string for i from 0 if (funcall predicate c) collect i)))
+         (setf locs (concatenate 'list (list 0) locs (list (length string))))
+         (loop for i0 in locs
+            for i1 in (cdr locs)
+            collect (remove-if predicate (subseq string i0 i1)))))
+
+     (defun parse-field-names-values (line)
+       "Return a list of '(key value) lists for each key provided in LINE."
+       (mapcar #'(lambda (x) (split-string x #'colonp)) (split-string line)))
+
+     (defun string-number-in-bounds-p (string lower upper)
+       "Determine if STRING represents a number that lies between lower and
+             upper (inclusive)."
+       (let ((n (parse-integer string :junk-allowed t)))
+         (when n (<= lower n upper))))
+
+     (defun valid-byr-p (byr)
+       "Validate passport birth year IYR."
+       (string-number-in-bounds-p byr 1920 2002))
+
+     (defun valid-iyr-p (iyr)
+       "Validate passport issue year IYR."
+       (string-number-in-bounds-p iyr 2010 2020))
+
+     (defun valid-eyr-p (eyr)
+       "Validate passport expiration year EYR."
+       (string-number-in-bounds-p eyr 2020 2030))
+
+     (defun valid-hgt-p (hgt)
+       "Validate height HEIGHT."
+       (cond ((search "cm" hgt) (string-number-in-bounds-p hgt 150 193))
+             ((search "in" hgt) (string-number-in-bounds-p hgt 59 76))
+             (t nil)))
+
+     (defun valid-hcl-p (hcl)
+       "Validate hair colour HCL."
+       (let ((hash-pos (position #\# hcl)) )
+         (and hash-pos (= hash-pos 0) (= (length hcl) 7)
+              (every
+               #'(lambda (c) (position c "1234567890abcdef"))
+               (subseq hcl 1)))))
+
+     (defun valid-ecl-p (ecl)
+       "Validate eye colour ECL."
+       (not (null (member ecl (list "amb" "blu" "brn" "gry" "grn" "hzl" "oth") :test #'string=))))
+
+     (defun valid-pid-p (pid)
+       "Validate a passport id PID."
+       (and (= (length pid) 9) (every #'(lambda (c) (position c "1234567890")) pid)))
+
+     (defun valid-cid-p (cid) "Ignore CID entries and return T." t)
+
+     (defun select-validator (field-name)
+       "Select a validator to use according to FIELD-NAME."
+       (cond ((string= field-name "byr") #'valid-byr-p)
+             ((string= field-name "iyr") #'valid-iyr-p)
+             ((string= field-name "eyr") #'valid-eyr-p)
+             ((string= field-name "hgt") #'valid-hgt-p)
+             ((string= field-name "hcl") #'valid-hcl-p)
+             ((string= field-name "ecl") #'valid-ecl-p)
+             ((string= field-name "pid") #'valid-pid-p)
+             ((string= field-name "cid") #'valid-cid-p)
+             (t (format t "Error: could not parse field name") nil)))
+
+     (defun validate-field (field-kv)
+       "Validate a passport key-value pair FIELD-KV, a two-element list."
+       (funcall (select-validator (car field-kv)) (cadr field-kv)))
+
+     (defun all-field-values-valid-p (line)
+       "Validate all provided passport fields in LINE."
+       (let ((parsed (parse-field-names-values line)))
+         (every #'validate-field parsed)))
+
+     (defun valid-passport-p (line)
+       "Determine if LINE corresponds to a valid passport."
+       (and (required-fields-p line) (all-field-values-valid-p line)))
+
+     (defun day4-part1 ()
+       (count 7 (mapcar #'num-required-fields
+                        (traverse-collecting-field-names (read-file "d4.txt")))))
+
+     (defun day4-part2 ()
+       (count-if #'valid-passport-p (lineify (read-file "d4.txt"))))
+
+     (verbose1 
+       (day4-part1)
+       (day4-part2))
+
+   #+end_src
+
+   #+RESULTS:
+   : (DAY4-PART1) : -> 245
+   : (DAY4-PART2) : -> 133
+
+   
+** Day 5
