@@ -689,19 +689,26 @@
    : (DAY7-PART2) : -> 34988
    
 ** Day 08
+   :PROPERTIES:
+   :ID:       8CDD83AE-801E-483C-86AF-B40592D0E595
+   :END:
 
 
    #+begin_src lisp :exports both :results output :tangle day08.lisp
      (load "my-utils.lisp")
      (ql:quickload 'split-sequence :silent t)
 
-     (defparameter *day8* (read-file "d8.txt"))
-     (defparameter *accumulator* 0)
-     (defparameter *pointer* 0)
-
      (defun parse-instruction (line)
        (destructuring-bind (inst val) (split-sequence:split-sequence #\Space line)
          (cons (read-from-string inst) (parse-integer val))))
+
+     (defparameter *day8* (read-file "d8.txt"))
+     (defparameter *accumulator* 0)
+     (defparameter *pointer* 0)
+     (defparameter *instructions*
+       (make-array (length *day8*) :initial-contents (mapcar #'parse-instruction *day8*)))
+     (defparameter *running* t)
+     (defparameter *visited* nil)
 
      (defun jmp (&optional (val 1)) (incf *pointer* val))
 
@@ -711,11 +718,6 @@
 
      (defun nop (&optional val) (jmp))
 
-     (defparameter *instructions*
-       (make-array (length *day8*) :initial-contents (mapcar #'parse-instruction *day8*)))
-     (defparameter *running* t)
-     (defparameter *visited* nil)
-
      (defun get-inst ()
        (cond ((<= 0 *pointer* (1- (length *instructions*)))
               (aref *instructions* *pointer*))
@@ -724,30 +726,23 @@
               (format t "accumulator has value: ~a.~%" *accumulator*)
               nil)))
 
-     (defmacro with-check-visited (&body body)
-       `(cond ((find *pointer* *visited*)
-               (setf *running* nil)
-               ,*accumulator*)
-              (*running*
-               (push *pointer* *visited*)
-               ,@body)))
-
-     (defmacro with-shortcircuit (max-iters &body body)
-       `(cond ((> (length *visited*) ,max-iters)
-               ;; (format t "short-circuiting~%")
-               (setf *running* nil))
-              ((= *pointer* (length *instructions*))
-               (format t "condition satisfied.~%accumulator is: ~a.~%" *accumulator*)
-               (setf *running* nil)
-               ,*accumulator*)
-              (*running*
-               (push *pointer* *visited*)
-               ,@body)))
+     (defun check-visited ()
+       (cond ((find *pointer* *visited*)
+              (setf *running* nil)
+              ,*accumulator*)
+             (*running*
+              (push *pointer* *visited*)
+              nil)))
 
      (defun eval-instruction (inst)
-       (when inst (with-check-visited (funcall (car inst) (cdr inst)))))
+       "Evaluate INST if non-nil."
+       (let ((output-val (check-visited)))
+         (cond (output-val output-val)
+               (inst (funcall (car inst) (cdr inst)))
+               (t nil))))
 
      (defun reset-runtime ()
+       "Reset runtime variables to initial states."
        (setf *accumulator* 0)
        (setf *pointer* 0)
        (setf *visited* nil)
@@ -758,27 +753,32 @@
      ;;; it stands to reason that we only need to change one of the entries in
      ;;; *visited* with jmp <--> nop. That leaves <=211 possibilities
      (defun get-swap-candidates ()
+       "Build list of candidates for part 2 swapping."
        (day08-part1)
        (remove-if-not #'(lambda (x) (or (eql x 'jmp) (eql x 'nop)))
                       ,*visited* :key #'get-inst-type))
 
      (defun get-inst-symbol (pointer-val)
-       "Gets the symbol associated with a pointer value"
+       "Gets the instruction symbol associated with POINTER-VAL"
        (when (<= 0 pointer-val (1- (length *instructions*)))
          (car (aref *instructions* pointer-val))))
 
      (defun set-inst-symbol (pointer-val new-inst)
+       "Set symbol at POINTER-VAL to NEW-INST."
        (when (or (eql 'jmp new-inst) (eql 'nop new-inst))
          (setf (aref *instructions* pointer-val)
                (cons new-inst (cdr (aref *instructions* pointer-val))))))
 
      (defun swap-inst-symbol (pointer-val)
+       "Swap 'JMP for 'NOP and vice versa at POINTER-VAL (or return NIL)."
        (let ((inst-func (get-inst-symbol pointer-val)))
          (cond ((eql inst-func 'jmp) (set-inst-symbol pointer-val 'nop))
                ((eql inst-func 'nop) (set-inst-symbol pointer-val 'jmp))
                (t nil))))
 
      (defun eval-if-valid ()
+       "Eval instruction associated with *pointer* only if *pointer* is
+     valid. Otherwise, stop runtime and return *accumulator* value."
        (cond ((<= 0 *pointer* (1- (length *instructions*)))
               (eval-instruction (get-inst)))
              (t (setf *running* nil)
