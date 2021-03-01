@@ -574,7 +574,6 @@
      (load "my-utils.lisp")
 
      (defparameter *day7* (read-file "d7.txt"))
-     (defparameter *tmp* (car *day7*))
 
      ;;;; preprocessing
 
