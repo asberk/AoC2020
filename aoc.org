@@ -908,6 +908,49 @@
    : (DAY09-PART2) : -> 23463012
    
 
+*** Notes
+
+    There is a potential bottleneck in ~APPEND-RIGHT~. Namely, I'm using ~APPEND~ to
+    add an element to the end of a list. If the list is long, and/or the
+    function is called a lot this could slow things down (because ~APPEND~ has to
+    traverse the whole list each time). A way of speeding this up (subject to a
+    bit of added complexity) is available in [[https://stackoverflow.com/a/6482598/1456421][this SO post]]. For example,
+
+    #+begin_src lisp :exports both :results output
+      (defparameter *contig* nil)
+      (defparameter *contig-tail* *contig*)
+
+      ;;; if *contig* is nil it has no tail and so we can't append-right;
+      ;;; do a normal PUSH instead.
+      (defun append-right--contig (value)
+        (cond (*contig-tail*
+               (setf (cdr *contig-tail*) (cons value nil))
+               (setf *contig-tail* (cdr *contig-tail*)))
+              (t (push value *contig*)
+                 (setf *contig-tail* *contig*))))
+
+      ;;; APPEND-RIGHT only makes sense when the list is non-nil, else there is no
+      ;;; "right" to append to. In this case, start with a usual PUSH and then use
+      ;;; APPEND-RIGHT.
+      (defun append-right (tail value)
+        (when tail
+          (setf (cdr tail) (cons value nil))
+          (setf tail (cdr tail))
+          tail))
+
+      ;;;; Example
+      (append-right--contig 0)
+      (append-right--contig 1)
+      (append-right--contig 2)
+      (append-right--contig 3)
+
+      (format t "~{~a~^, ~}~%" *contig*)
+      (format t "~{~a~^, ~}~%" *contig-tail*)
+    #+end_src
+
+    #+RESULTS:
+    : 0, 1, 2, 3
+    : 3
 
 ** Day xx
    :PROPERTIES:
