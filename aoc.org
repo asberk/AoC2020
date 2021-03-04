@@ -1466,61 +1466,36 @@
 
      ;;;; Part 2
 
-     (defun bezout-coefficients (a b)
-       "Given (a b) co-prime, compute (m n) such that 
-                      a * m + b * n = d 
-                  where d = gcd(a, b)."
-       (let ((old-r a)
-             (new-r b)
-             (old-s 1)
-             (new-s 0)
-             (old-t 0)
-             (new-t 1)
-             (quotient nil))
-         (loop while (> new-r 0)
-            do (progn
-                 (setf quotient (floor old-r new-r))
-                 (shiftf old-r new-r (- old-r (* quotient new-r)))
-                 (shiftf old-s new-s (- old-s (* quotient new-s)))
-                 (shiftf old-t new-t (- old-t (* quotient new-t))))
-            finally (return (cons old-s old-t)))))
+     (defun egcd (a b)
+       "Extended Euclidean algorithm. Return (r s t) where r is remainder and (s t)
+       are such that s*a + t*b = r."
+       ;; update rule looks like r_{i+1} = q*r_{i+1} - r_{i}
+       (do ((r (cons b a) (cons (- (cdr r) (* (car r) q)) (car r))) ; (new-r old-r)
+            (s (cons 0 1) (cons (- (cdr s) (* (car s) q)) (car s))) ; (new-s old-s)
+            (u (cons 1 0) (cons (- (cdr u) (* (car u) q)) (car u)))); (new-t old-t)
+           ;; iterate until r_{I+1} = 0; return (r_{I} s_{I} t_{I})
+           ((zerop (car r)) (values (cdr r) (cdr s) (cdr u)))
+         ;; update quotient q
+         (setf q (floor (cdr r) (car r)))))
 
+     (defun invmod (a m)
+       "Return the inverse of a-inverse(mod m). Throw error if (a m) not co-prime."
+       (multiple-value-bind (r s u) (egcd a m)
+         (unless (= 1 r) (error "invmod: Values ~a and ~a are not co-prime." a m))
+         s))
 
-     (defun crt2 (n0 n1 a0 a1)
-       "Chinese Remainder Theorem for two co-prime numbers (n0 n1) with remainders (a0 a1). 
-                  Computes x such that:
-                     x \cong a0 (mod n0)
-                     x \cong a1 (mod n1)
-                 If n0 and n1 are not co-prime this function returns garbage."
-       (let* ((bz (bezout-coefficients n0 n1))
-              (m0 (car bz))
-              (m1 (cdr bz)))
-         (+ (* a0 m1 n1) (* a1 m0 n0))))
+     (mapcar #'cdr (list '(1 . 2) '(3 . 4)))
 
-     (defun chinese-remainder (numbers remainders)
-       "Chinese Remainder Theorem for co-prime numbers (n0 n1 ... nk) with remainders (a0 a1 ... ak). 
-                  Computes x such that:
-                     x \cong a0 (mod n0)
-                     x \cong a1 (mod n1)
-                        ...
-                     x \cong ak (mod nk)
-                 If ni are not co-prime this function returns garbage."
-       (when (and numbers remainders
-                  (listp numbers) (listp remainders)
-                  (eql (length numbers) (length remainders)))
-         (destructuring-bind (n0 n1 &rest ni) numbers
-           (destructuring-bind (a0 a1 &rest ai) remainders
-             (let* ((n01 (* n0 n1))
-                    (a01 (crt2 n0 n1 a0 a1)))
-               (if (null ni)
-                   a01
-                   (chinese-remainder (cons n01 ni) (cons a01 ai))))))))
-
-     (defun silly-func (numbers remainders)
-       "This works. The answer seems to be n0*n1*...*nk - x*(mod n0*n1...*nk), but
-        unfortunately I don't know why!"
-       (- (apply #'* numbers) (mod (chinese-remainder numbers remainders) (apply #'* numbers))))
-
+     (defun chinese-remainder (am)
+       "am is a list of cons cells where the integers are the cars and the moduli are
+       the cdrs."
+       (loop for (a . m) in am
+          with prod-m = (apply #'* (mapcar #'cdr am))
+          and result = 0
+          for yi = (/ prod-m m)
+          for zi = (invmod yi m)
+          finally (return (mod result prod-m))
+          do (incf result (* a yi zi))))
 
      ;;;; final
 
@@ -1535,7 +1510,11 @@
 
 
      (defun day13-part2 ()
-       (silly-func *bus-numbers* *bus-positions*))
+       "Goal is to find tstamp + offset_i \cong 0(mod bus-number_i). Compute this
+        using the chinese remainder theorem with integers a given by the negative of
+        the bus-positions, and the moduli m given as the bus numbers (which are all
+        prime)."
+       (chinese-remainder (pairlis (mapcar #'- *bus-positions*) *bus-numbers*)))
 
      (verbose1
        (day13-part1)
@@ -1545,8 +1524,7 @@
    #+RESULTS:
    : (DAY13-PART1) : -> 261
    : (DAY13-PART2) : -> 807435693182510
-   
-   
+
 ** Day xx
    :PROPERTIES:
    :ID:       FF9FD49E-3606-4443-A020-4E2454F05DA5
