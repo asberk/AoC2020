@@ -137,20 +137,19 @@
               :initial-contents
               (mapcar #'possible-slots (get-ticket-field-ranges))))
 
-(defun possible-slot-counts ()
+(defun possible-slot-counts (arr)
   "Returns a list where each element corresponds to the number of ticket fields
   that could be valid in that slot."
-  (let ((arr (possible-slot-array)))
-    (loop for j from 0 below 20
-       collect (loop for i from 0 below 20
-                  counting (aref arr i j)))))
+  (loop for j from 0 below 20
+     collect (loop for i from 0 below 20
+                counting (aref arr i j))))
 
 (defun get-row-for-slot-count (n exclude)
   "Retrieve the row of (POSSIBLE-SLOT-ARRAY) where (POSSIBLE-SLOT-COUNTS) is
   N. Use EXCLUDE to exclude the TICKET-FIELD-INDEX values returned for lower
   values of N."
   (let* ((arr (possible-slot-array))
-         (pslot-counts (possible-slot-counts))
+         (pslot-counts (possible-slot-counts arr))
          (search-column (loop
                            for c in pslot-counts
                            for i from 0
