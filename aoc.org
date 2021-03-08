@@ -2342,7 +2342,7 @@
    (DAY18-PART2) : -> 9966990988262
    #+end_example
    
-
+One attempt each.
 
 
 
