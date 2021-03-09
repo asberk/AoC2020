@@ -2344,6 +2344,309 @@
    
 One attempt each.
 
+** Day 19
+
+   #+begin_src lisp :exports both :results output :tangle day19.lisp
+     (ql:quickload 'split-sequence :silent t)
+
+     (defparameter *day19* (read-file "d19.txt"))
+
+     (defun zero-length-p (sequence)
+       (zerop (length sequence)))
+
+     (defun str-base-rule-p (rule-text)
+       (some #'(lambda (x) (find x rule-text)) (list #\a #\b)))
+
+     (defun base-rule-p (rule)
+       (when (and (characterp (cdr rule))
+                  (or (char= (cdr rule) #\a)
+                      (char= (cdr rule) #\b)))
+         (cdr rule)))
+
+     (defun str-disjunction-p (rule-text)
+       (find #\| rule-text))
+
+     (defun parse-input ()
+       (labels ((load-data ()
+                  (destructuring-bind (rules messages)
+                      (split-sequence:split-sequence-if
+                       #'zero-length-p
+                       (read-file "d19.txt"))
+                    (values rules messages)))
+                (parse-rule-text (rule-text)
+                  (cond ((str-base-rule-p rule-text) (str-base-rule-p rule-text))
+                        ((str-disjunction-p rule-text)
+                         (mapcar #'(lambda (x) (if (string= x "|") #\| (parse-integer x)))
+                                 (remove-if
+                                  #'zero-length-p
+                                  (split-sequence:split-sequence-if
+                                   #'(lambda (x) (char= x #\Space))
+                                   rule-text))))
+                        (t (mapcar #'parse-integer
+                                   (split-sequence:split-sequence #\Space rule-text)))))
+                (parse-rule (rule-line)
+                  (destructuring-bind (rule-name rule-text)
+                      (split-sequence:split-sequence #\: rule-line)
+                    (cons (parse-integer rule-name) (parse-rule-text (subseq rule-text 1))))))
+         (multiple-value-bind (rules messages) (load-data)
+           (values (mapcar #'parse-rule rules) messages))))
+
+     (multiple-value-bind (rules messages) (parse-input)
+       (defparameter *rules* rules)
+       (defparameter *messages* messages))
+
+     ,*rules*
+
+     (defun first-two (list)
+       (when (listp list)
+         (list (car list) (cadr list))))
+
+     (defun last-two (list)
+       (when (listp list)
+         (let ((rev (reverse list)))
+           (list (cadr rev) (car rev)))))
+
+     (defun build-tree (rule-number)
+       (let* ((rule (assoc rule-number *rules*))
+              (rule-body (cdr rule)))
+         (cond ((base-rule-p rule) (base-rule-p rule))
+               (t
+                (loop for number in rule-body
+                   if (numberp number)
+                   collect (build-tree number)
+                   else collect #\|)))))
+
+     (build-tree 0)
+
+     ;;;; tree snippet
+     ;; (#\b
+     ;;      (#\a (((#\a #\| #\b) (#\a #\| #\b)) #\a #\| (#\b #\b #\| #\a #\a) #\b)
+     ;;       #\| #\b (#\a (#\b #\a) #\| #\b (#\b #\b)))
+     ;;      #\| #\a
+     ;;      (#\a
+     ;;       ((#\a #\a #\| #\b (#\a #\| #\b)) #\b #\|
+     ;;        ((#\a #\| #\b) #\b #\| #\a #\a) #\a)
+     ;;       #\| #\b
+     ;;       (((#\a #\| #\b) (#\a #\| #\b)) #\a #\| (#\b #\b #\| #\a #\a) #\b)))
+
+     ;; 0: 4 1 5
+     ;; 1: 2 3 | 3 2
+     ;; 2: 4 4 | 5 5
+     ;; 3: 4 5 | 5 4
+     ;; 4: "a"
+     ;; 5: "b"
+     ;; 
+     ;;                     0
+     ;;     4               1               5
+     ;;     a     2     3   |   3     2     b
+     ;;         44|55 45|54   45|54 44|55
+     ;;         aa|bb ab|ba   ab|ba aa|bb
+     ;; ababbb
+     ;; bababa
+     ;; abbbab
+     ;; aaabbb
+     ;; aaaabbb
+
+
+
+     (defun day19-part1 ()
+       nil)
+
+     (defun day19-part2 ()
+       nil)
+
+     (verbose1
+       (day19-part1)
+       (day19-part2))
+   #+end_src
+   
+
+** Day 20
+
+   #+begin_src lisp :exports both :results output :tangle day20.lisp
+     (ql:quickload 'split-sequence :silent t)
+
+     (defun parse-input ()
+       (labels ((load-data () (read-file "d20.txt"))
+                (split-tiles ()
+                  (split-sequence:split-sequence-if
+                   #'(lambda (line)
+                       (zerop (length line)))
+                   (load-data)))
+                (parse-tile-name (line)
+                  (parse-integer (remove-if-not #'digit-char-p line)))
+                (create-tile-array (lines)
+                  (make-array '(10 10) :initial-contents lines))
+                (parse-tile (lines)
+                  (values (parse-tile-name (car lines))
+                          (create-tile-array (cdr lines))))
+                (hash-tile (tbl tile-lines)
+                  (when tile-lines
+                    (multiple-value-bind (tile-name tile-arr) (parse-tile tile-lines) 
+                      (setf (gethash tile-name tbl) tile-arr)
+                      tile-name)))
+                (main ()
+                  (loop for tile-lines in (split-tiles)
+                     with tbl = (make-hash-table)
+                     with keys = nil
+                     if tile-lines
+                     do (push (hash-tile tbl tile-lines) keys)
+                     finally (return (values tbl keys)))))
+         (main)))
+
+     (multiple-value-bind (tbl tile-keys) (parse-input)
+       (defparameter *tbl* tbl)
+       (defparameter *tile-keys* tile-keys))
+
+     (defun count-hashes-nesw (tile-name)
+       (let ((tile (gethash tile-name *tbl*))
+             (east-west (loop for i from 0 to 9
+                           counting (char= (aref tile i 0) #\#) into west
+                           counting (char= (aref tile i 9) #\#) into east
+                           finally (return (cons east west))))
+             (north-south (loop for j from 0 to 9
+                             counting (char= (aref tile 0 j) #\#) into north
+                             counting (char= (aref tile 9 j) #\#) into south
+                             finally (return (cons north south)))))
+         (list (car north-south) (car east-west)
+               (cdr north-south) (cdr east-west))))
+
+     (defun edges-match-p (edge1 edge2)
+       (loop for c1 in edge1
+          for c2 in edge2
+          if (char/= c1 c2)
+          do (return-from edges-match-p nil)
+          finally (return t)))
+
+     (defun get-edge (tile-name side &optional (rev nil))
+       (labels ((get-ns-edge (tile &optional (north t))
+                  (loop for j from 0 to 9
+                     with i = (or (and north 0) (and (not north) 9))
+                     collect (aref tile i j)))
+                (get-ew-edge (tile &optional (east t))
+                  (loop for i from 0 to 9
+                     with j = (or (and east 9) (and (not east) 0))
+                     collect (aref tile i j)))
+                (get-edge-from (tile)
+                  (cond ((eq side :n) (get-ns-edge tile))
+                        ((eq side :e) (get-ew-edge tile))
+                        ((eq side :s) (get-ns-edge tile nil))
+                        ((eq side :w) (get-ew-edge tile nil))))
+                (reverse-maybe (edge) (if rev (reverse edge) edge)))
+         (reverse-maybe (get-edge-from (gethash tile-name *tbl*)))))
+
+     ;;;; If you're an edge tile you only match with two other tiles. Moreover, you
+     ;;;; should only be able to match on one side if the problem is set up in the
+     ;;;; easiest way. Let's proceed and hope for the best.
+
+
+
+
+     (defun test-tile-fit (tile-name1 tile-name2)
+       (let ((directions (list :n :e :s :w)))
+         (loop for d1 in directions
+            for edge1 = (get-edge tile-name1 d1)
+            do (loop for d2 in directions
+                  for edge2 = (get-edge tile-name2 d2)
+                  if (edges-match-p edge1 edge2)
+                  do (return-from test-tile-fit (list d1 d2 nil))
+                  if (edges-match-p (reverse edge1) edge2)
+                  do (return-from test-tile-fit (list d1 d2 :rev))))))
+
+     (defun brute-tile-fits ()
+       (loop for key1 in *tile-keys*
+        for key-tail on *tile-keys*
+        append (loop for key2 in (cdr key-tail)
+                  for result = (test-tile-fit key1 key2)
+                  if result 
+                  collect (list (cons key1 key2) result))))
+
+     (defun in-cons-cell (tile-name)
+       #'(lambda (x) (or (= (caar x) tile-name)
+                         (= (cdar x) tile-name))))
+
+     (defun get-matches-for (tile-name tile-matches)
+       (remove-if-not (in-cons-cell tile-name) tile-matches))
+
+     (defun find-corners (tile-matches)
+       (loop for tile-name in *tile-keys*
+          if (= (length (get-matches-for tile-name tile-matches)) 2)
+          collect tile-name))
+
+     (defparameter *arrangement* (make-array '(12 12)))
+
+
+
+     (defun dotted-pair-p (item)
+       (and (listp item) (not (listp (cdr item)))))
+
+     (defun cons-pair (dotted-pair tile-name)
+       (when (and (dotted-pair-p dotted-pair) (numberp tile-name))
+         (cond ((= (car dotted-pair) tile-name) (cdr dotted-pair))
+               ((= (cdr dotted-pair) tile-name) (car dotted-pair))
+               (t nil))))
+
+     (defun get-tile-names-matching (tile-name tile-matches)
+       (let* ((match-pairs
+               (mapcar #'car (get-matches-for tile-name tile-matches))))
+         (mapcar #'(lambda (dotted-pair) (cons-pair dotted-pair tile-name)) match-pairs)))
+
+     (defun find-mutual-matches (tile-name1 tile-name2 tile-matches)
+       (let ((matches1 (get-tile-names-matching tile-name1 tile-matches))
+             (matches2 (get-tile-names-matching tile-name2 tile-matches)))
+         (intersection matches1 matches2)))
+
+     (defun assigned-tiles ()
+       (loop for i from 0 below 12
+          append (loop for j from 0 below 12
+                    for tn = (aref *arrangement* i j)
+                    if (/= tn 0)
+                    collect tn)))
+
+     (defun unassigned-mutual-matches (tn1 tn2 tile-matches)
+       (let* ((mutual-matches (find-mutual-matches tn1 tn2 tile-matches))
+              (already-seen (assigned-tiles)))
+         (set-difference mutual-matches already-seen)))
+
+     (defun unassigned-matches (tile-name tile-matches)
+       (let* ((matches (get-tile-names-matching tile-name tile-matches))
+              (already-seen (assigned-tiles)))
+         (set-difference matches already-seen)))
+
+     (defun arrange-tiles ()
+       (let* ((tile-matches (brute-tile-fits))
+              (corners (find-corners tile-matches))
+              (first-corner (car corners))
+              (matches-first-corner (get-tile-names-matching first-corner tile-matches)))
+         ;; initialize
+         (setf (aref *arrangement* 0 0) first-corner)
+         (setf (aref *arrangement* 0 1) (car matches-first-corner))
+         (setf (aref *arrangement* 1 0) (cadr matches-first-corner))
+
+         ;; begin fill
+         ;; (testing...)
+         (unassigned-mutual-matches  (car matches-first-corner) (cadr matches-first-corner) tile-matches)
+         (unassigned-matches (car matches-first-corner) tile-matches)))
+
+     ;; test:
+     (arrange-tiles)
+
+
+     (defun day20-part1 ()
+       (let ((tile-matches (brute-tile-fits)))
+         (apply #'* (find-corners tile-matches))))
+
+     (defun day20-part2 ()
+       nil)
+
+     (verbose1
+       (day20-part1)
+       (day20-part2))
+   #+end_src
+   
+
+
+
 
 
 ** Day xx
