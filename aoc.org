@@ -2346,6 +2346,9 @@ One attempt each.
 
 ** Day 19
 
+   I probably need to check out [[https://github.com/Andrew-William-Smith/advent-of-code/blob/master/day19.lisp][Andrew Smith's solution]], but I'd really like to
+   take /one/ more stab at it before throwing in the towel.
+
    #+begin_src lisp :exports both :results output :tangle day19.lisp
      (ql:quickload 'split-sequence :silent t)
 
@@ -2498,6 +2501,8 @@ One attempt each.
        (defparameter *tbl* tbl)
        (defparameter *tile-keys* tile-keys))
 
+
+
      (defun count-hashes-nesw (tile-name)
        (let ((tile (gethash tile-name *tbl*))
              (east-west (loop for i from 0 to 9
@@ -2561,21 +2566,22 @@ One attempt each.
                   if result 
                   collect (list (cons key1 key2) result))))
 
+     (defparameter *tile-matches* (brute-tile-fits))
+
      (defun in-cons-cell (tile-name)
        #'(lambda (x) (or (= (caar x) tile-name)
                          (= (cdar x) tile-name))))
 
-     (defun get-matches-for (tile-name tile-matches)
-       (remove-if-not (in-cons-cell tile-name) tile-matches))
+     (defun get-matches-for (tile-name)
+       (remove-if-not (in-cons-cell tile-name) *tile-matches*))
 
-     (defun find-corners (tile-matches)
+     (defun find-corners ()
        (loop for tile-name in *tile-keys*
-          if (= (length (get-matches-for tile-name tile-matches)) 2)
+          if (= (length (get-matches-for tile-name)) 2)
           collect tile-name))
 
-     (defparameter *arrangement* (make-array '(12 12)))
 
-
+     ;;;; Part 2
 
      (defun dotted-pair-p (item)
        (and (listp item) (not (listp (cdr item)))))
@@ -2586,14 +2592,14 @@ One attempt each.
                ((= (cdr dotted-pair) tile-name) (car dotted-pair))
                (t nil))))
 
-     (defun get-tile-names-matching (tile-name tile-matches)
+     (defun get-tile-names-matching (tile-name)
        (let* ((match-pairs
-               (mapcar #'car (get-matches-for tile-name tile-matches))))
+               (mapcar #'car (get-matches-for tile-name))))
          (mapcar #'(lambda (dotted-pair) (cons-pair dotted-pair tile-name)) match-pairs)))
 
-     (defun find-mutual-matches (tile-name1 tile-name2 tile-matches)
-       (let ((matches1 (get-tile-names-matching tile-name1 tile-matches))
-             (matches2 (get-tile-names-matching tile-name2 tile-matches)))
+     (defun find-mutual-matches (tile-name1 tile-name2)
+       (let ((matches1 (get-tile-names-matching tile-name1))
+             (matches2 (get-tile-names-matching tile-name2)))
          (intersection matches1 matches2)))
 
      (defun assigned-tiles ()
@@ -2603,21 +2609,20 @@ One attempt each.
                     if (/= tn 0)
                     collect tn)))
 
-     (defun unassigned-mutual-matches (tn1 tn2 tile-matches)
-       (let* ((mutual-matches (find-mutual-matches tn1 tn2 tile-matches))
+     (defun unassigned-mutual-matches (tn1 tn2)
+       (let* ((mutual-matches (find-mutual-matches tn1 tn2))
               (already-seen (assigned-tiles)))
          (set-difference mutual-matches already-seen)))
 
-     (defun unassigned-matches (tile-name tile-matches)
-       (let* ((matches (get-tile-names-matching tile-name tile-matches))
+     (defun unassigned-matches (tile-name)
+       (let* ((matches (get-tile-names-matching tile-name))
               (already-seen (assigned-tiles)))
          (set-difference matches already-seen)))
 
      (defun arrange-tiles ()
-       (let* ((tile-matches (brute-tile-fits))
-              (corners (find-corners tile-matches))
+       (let* ((corners (find-corners))
               (first-corner (car corners))
-              (matches-first-corner (get-tile-names-matching first-corner tile-matches)))
+              (matches-first-corner (get-tile-names-matching first-corner)))
          ;; initialize
          (setf (aref *arrangement* 0 0) first-corner)
          (setf (aref *arrangement* 0 1) (car matches-first-corner))
@@ -2625,16 +2630,82 @@ One attempt each.
 
          ;; begin fill
          ;; (testing...)
-         (unassigned-mutual-matches  (car matches-first-corner) (cadr matches-first-corner) tile-matches)
-         (unassigned-matches (car matches-first-corner) tile-matches)))
+         (unassigned-mutual-matches  (car matches-first-corner) (cadr matches-first-corner))
+         (unassigned-matches (car matches-first-corner))))
 
-     ;; test:
-     (arrange-tiles)
+     (defparameter *arrangement* (make-array '(12 12)))
+
+     (defun breadth-first-search (other-corners-func)
+       (let* ((corners (find-corners))
+              (other-corners (funcall other-corners-func corners))
+              (starting-corner (set-difference corners other-corners))
+              (visited (acons (car starting-corner) 0 nil)))
+         (labels ((get-neighbours (tile-name) (get-tile-names-matching tile-name))
+                  (get-path-length (node) (cdr (assoc node visited)))
+                  (satisfied-p (node) (and (find node other-corners) (<= (get-path-length node) 12)))
+                  (set-path-length (node new-path-length) (push (cons node new-path-length) visited))
+                  (update-path-length (node new-path-length)
+                    (let ((cur-length (get-path-length node)))
+                      (when (or (null cur-length) (< new-path-length cur-length))
+                        (set-path-length node new-path-length))))
+                  (bfs (path)
+                    (when (satisfied-p (car path))
+                      (return-from breadth-first-search (values path visited)))
+                    (when path
+                      (let* ((node (car path))
+                             (neighbours (get-neighbours node))
+                             (new-path-length (1+ (get-path-length node)))
+                             (closer-neighbours
+                              (remove-if #'(lambda (neighbour)
+                                             (let ((nbr-path-len (get-path-length neighbour)))
+                                               (when nbr-path-len
+                                                 (>= new-path-length (get-path-length neighbour)))))
+                                         (remove nil neighbours))))
+                        (loop for neighbour in closer-neighbours
+                           for new-path = (cons neighbour path)
+                           do (update-path-length neighbour new-path-length)
+                           do (bfs new-path)
+                           until (satisfied-p node))))))
+           (bfs starting-corner))))
+
+
+     (defun without-corner (i)
+       #'(lambda (corners)
+           (loop for corner in corners for j from 0 unless (= j i) collect corner)))
+
+     (defun arrange-edge (edge idx direction)
+       (cond
+         ((and (/= idx 0) (/= idx 11)) (error "arrange-edge: IDX must be 0 or 11"))
+         ((eql direction :right)
+          (loop for node in edge for j from 0
+             do (setf (aref *arrangement* idx j) node)))
+         ((eql direction :down)
+          (loop for node in edge for i from 0
+             do (setf (aref *arrangement* i idx) node)))))
+
+     (defun initialize-arrangement ()
+       "Uses a breadth-first search to find three of the edges of *ARRANGEMENT*."
+       (arrange-edge (reverse (breadth-first-search #'cdr)) 0 :right)
+       (arrange-edge (breadth-first-search (without-corner 2)) 11 :down)
+       (arrange-edge (reverse (breadth-first-search (without-corner 3))) 11 :right))
+
+     ;;; It would be cool if we could use VISITED returned from BREADTH-FIRST-SEARCH
+     ;;; to triangulate the inner coordinates.
+     ;;; Of course, it would probably be faster - computationally and IRL time-wise -
+     ;;; to simply correctly orient the tiles from the get-go.
+
+
+     (defun orient-tile (tile-name reference-tile)
+       (when tile-name and reference-tile are neighbours and reference-tile is oriented
+             do: orient tile-name
+             ))
+
+     ;;;; Final
+
 
 
      (defun day20-part1 ()
-       (let ((tile-matches (brute-tile-fits)))
-         (apply #'* (find-corners tile-matches))))
+       (apply #'* (find-corners)))
 
      (defun day20-part2 ()
        nil)
