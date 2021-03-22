@@ -1,3 +1,4 @@
+#!/usr/bin/env sbcl --script
 (defparameter *day12* (read-file "d12.txt"))
 (defparameter *theta* 0 "Ship angle (initially aligned with x axis)")
 (defparameter *x* 0 "Ship x position")

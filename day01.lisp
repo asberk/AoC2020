@@ -1,3 +1,4 @@
+#!/usr/bin/env sbcl --script
 (load "my-utils.lisp")
 
 (defun day1-part1 ()

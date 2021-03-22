@@ -1,3 +1,4 @@
+#!/usr/bin/env sbcl --script
 (load "my-utils.lisp")
 
 (defun get-char-at-pos (line pos)

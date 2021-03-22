@@ -1,3 +1,4 @@
+#!/usr/bin/env sbcl --script
 (defparameter *day11* (read-file "d11.txt"))
 (defparameter *m* (length *day11*))
 (defparameter *n* (length (car *day11*)))

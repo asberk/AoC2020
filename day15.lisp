@@ -1,3 +1,5 @@
+#!/usr/bin/env sbcl --script
+(load "my-utils.lisp")
 (defparameter *day15* (list 1 12 0 20 8 16))
 (defparameter *last-number* 16 "The last number that was spoken")
 (defparameter *turn* 6 "The last turn number")

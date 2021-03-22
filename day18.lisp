@@ -1,3 +1,5 @@
+#!/usr/bin/env sbcl --script
+(load "my-utils.lisp")
 (defparameter *day18* (read-file "d18.txt"))
 
 (defun parse-line (line)

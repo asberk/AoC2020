@@ -1,10 +1,11 @@
+#!/usr/bin/env sbcl --script
 (load "my-utils.lisp")
+(load "~/.sbclrc")
+(ql:quickload "split-sequence")
 
 (defparameter *day7* (read-file "d7.txt"))
 
 ;;;; preprocessing
-
-(ql:quickload 'split-sequence :silent t)
 
 (defun split-input-by-groups (data)
   "Return a list of lists from DATA, assuming each entry is a string."

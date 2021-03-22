@@ -1,3 +1,5 @@
+#!/usr/bin/env sbcl --script
+(load "my-utils.lisp")
 (defparameter *day17* (read-file "d17.txt"))
 (defparameter *state* (make-hash-table :test 'equalp))
 

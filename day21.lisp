@@ -1,4 +1,7 @@
-(ql:quickload 'split-sequence :silent t)
+#!/usr/bin/env sbcl --script
+(load "my-utils.lisp")
+(load "~/.sbclrc")
+(ql:quickload "split-sequence")
 
 (defun parse-input ()
   (labels ((load-data () (read-file "d21.txt"))

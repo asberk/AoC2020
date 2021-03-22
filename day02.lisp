@@ -1,3 +1,4 @@
+#!/usr/bin/env sbcl --script
 (load "my-utils.lisp")
 
 (defparameter *day2* (read-file "d2.txt"))

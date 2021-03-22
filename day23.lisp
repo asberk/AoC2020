@@ -1,5 +1,6 @@
+#!/usr/bin/env sbcl --script
 ;;;; Parts 1 and 2
-
+(load "my-utils.lisp")
 (defparameter *cups* nil)
 
 (defun initial-data (&optional debug)

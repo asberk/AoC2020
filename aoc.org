@@ -18,7 +18,7 @@
    :END:
 
 
-   #+begin_src lisp :exports both :results output :tangle my-utils.lisp
+   #+begin_src lisp :exports both :results output :tangle my-utils.lisp 
      (defparameter *aoc-dir* "code/aoc20/inputs/")
 
      (defun get-puzzle-input-fpath (fname)
@@ -67,7 +67,7 @@
    :END:
 
 
-    #+begin_src lisp :exports both :results output :tangle day01.lisp
+    #+begin_src lisp :exports both :results output :tangle day01.lisp :shebang "#!/usr/bin/env sbcl --script"
       (load "my-utils.lisp")
 
       (defun day1-part1 ()
@@ -113,7 +113,7 @@
    :ID:       FCD2425A-5628-44EB-8AD9-22E127A8A051
    :END:
 
-    #+begin_src lisp :exports both :results output :tangle day02.lisp
+    #+begin_src lisp :exports both :results output :tangle day02.lisp :shebang "#!/usr/bin/env sbcl --script"
       (load "my-utils.lisp")
 
       (defparameter *day2* (read-file "d2.txt"))
@@ -182,7 +182,7 @@
    :ID:       B4D0AF4C-D061-4E67-BDBA-D3A11E4A62E1
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day03.lisp
+   #+begin_src lisp :exports both :results output :tangle day03.lisp :shebang "#!/usr/bin/env sbcl --script"
      (load "my-utils.lisp")
 
      (defun get-char-at-pos (line pos)
@@ -235,7 +235,7 @@
    :ID:       3AE5B0B0-212A-4A27-989C-A4416BA78EC9
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day04.lisp
+   #+begin_src lisp :exports both :results output :tangle day04.lisp :shebang "#!/usr/bin/env sbcl --script"
      (load "my-utils.lisp")
 
      (defparameter
@@ -421,7 +421,7 @@
    :ID:       D5D0FDF6-828E-400F-8DBF-FFCEF6F96A4E
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day05.lisp
+   #+begin_src lisp :exports both :results output :tangle day05.lisp :shebang "#!/usr/bin/env sbcl --script"
      (load "my-utils.lisp")
 
      (defparameter *test-cases* (list "FBFBBFFRLR" "BFFFBBFRRR" "FFFBBBFRRR" "BBFFBBFRLL"))
@@ -506,16 +506,16 @@
    :END:
 
 
-   #+begin_src lisp :exports both :results output :tangle day06.lisp
+   #+begin_src lisp :exports both :results output :tangle day06.lisp :shebang "#!/usr/bin/env sbcl --script"
      (load "my-utils.lisp")
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defparameter *day6* (read-file "d6.txt") "Day 6 puzzle input")
      (defvar *lower*
        (loop with a = (char-code #\a)
              for i below 26
           collect (code-char (+ a i))))
-
-     (ql:quickload 'split-sequence :silent t)
 
      (defun split-input-by-groups (data)
        "Return a list of lists from DATA, assuming each entry is a string."
@@ -570,14 +570,14 @@
    :END:
 
 
-   #+begin_src lisp :exports both :results output :tangle day07.lisp
+   #+begin_src lisp :exports both :results output :tangle day07.lisp :shebang "#!/usr/bin/env sbcl --script"
      (load "my-utils.lisp")
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defparameter *day7* (read-file "d7.txt"))
 
      ;;;; preprocessing
-
-     (ql:quickload 'split-sequence :silent t)
 
      (defun split-input-by-groups (data)
        "Return a list of lists from DATA, assuming each entry is a string."
@@ -694,9 +694,10 @@
    :END:
 
 
-   #+begin_src lisp :exports both :results output :tangle day08.lisp
+   #+begin_src lisp :exports both :results output :tangle day08.lisp :shebang "#!/usr/bin/env sbcl --script"
      (load "my-utils.lisp")
-     (ql:quickload 'split-sequence :silent t)
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defun parse-instruction (line)
        (destructuring-bind (inst val) (split-sequence:split-sequence #\Space line)
@@ -824,7 +825,7 @@
    :END:
 
 
-   #+begin_src lisp :exports both :results output :tangle day09.lisp
+   #+begin_src lisp :exports both :results output :tangle day09.lisp :shebang "#!/usr/bin/env sbcl --script"
      (load "my-utils.lisp")
 
      ;;;; def
@@ -957,10 +958,10 @@
    :ID:       660CD373-3858-4F42-AEF5-C044B4E5E0E9
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day10.lisp
-     ;; (load "my-utils.lisp")
-
-     (ql:quickload 'split-sequence :silent t)
+   #+begin_src lisp :exports both :results output :tangle day10.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defparameter *day10* (mapcar #'parse-integer (read-file "d10.txt")))
      (defparameter *device-joltage* (+ 3 (apply #'max *day10*)))
@@ -1078,7 +1079,7 @@
    :ID:       6C47E0CA-9A6B-436A-A5EC-11A1BA478206
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day11.lisp
+   #+begin_src lisp :exports both :results output :tangle day11.lisp :shebang "#!/usr/bin/env sbcl --script"
      (defparameter *day11* (read-file "d11.txt"))
      (defparameter *m* (length *day11*))
      (defparameter *n* (length (car *day11*)))
@@ -1310,7 +1311,7 @@
    :END:
 
 
-   #+begin_src lisp :exports both :results output :tangle day12.lisp
+   #+begin_src lisp :exports both :results output :tangle day12.lisp :shebang "#!/usr/bin/env sbcl --script"
      (defparameter *day12* (read-file "d12.txt"))
      (defparameter *theta* 0 "Ship angle (initially aligned with x axis)")
      (defparameter *x* 0 "Ship x position")
@@ -1431,8 +1432,9 @@
    :ID:       9835D616-A57F-4957-9F60-3282E6300270
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day13.lisp
-     (ql:quickload 'split-sequence :silent t)
+   #+begin_src lisp :exports both :results output :tangle day13.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defparameter *day13* (read-file "d13.txt"))
      (defparameter *my-arr-time* (parse-integer (car *day13*)))
@@ -1530,8 +1532,9 @@
    :ID:       E0B60C09-12A7-4E6C-BB88-85B234BE1B18
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day14.lisp
-     (ql:quickload 'split-sequence :silent t)
+   #+begin_src lisp :exports both :results output :tangle day14.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defparameter *day14* (read-file "d14.txt"))
 
@@ -1670,7 +1673,8 @@
    :ID:       1C5F03F7-B9E3-4B50-BBEA-D17F63A7E7A3
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day15.lisp
+   #+begin_src lisp :exports both :results output :tangle day15.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
      (defparameter *day15* (list 1 12 0 20 8 16))
      (defparameter *last-number* 16 "The last number that was spoken")
      (defparameter *turn* 6 "The last turn number")
@@ -1775,8 +1779,10 @@
    :END:
 
 
-   #+begin_src lisp :exports both :results output :tangle day16.lisp
-     (ql:quickload 'split-sequence :silent t)
+   #+begin_src lisp :exports both :results output :tangle day16.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defparameter *day16* (read-file "d16.txt"))
 
@@ -1986,7 +1992,8 @@
    :ID:       630D7CAB-D991-4C25-B29E-413F5BE1E923
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day17.lisp
+   #+begin_src lisp :exports both :results output :tangle day17.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
      (defparameter *day17* (read-file "d17.txt"))
      (defparameter *state* (make-hash-table :test 'equalp))
 
@@ -2179,7 +2186,8 @@
    :ID:       3E812F30-024A-4A5B-AB3D-DD0230E93E25
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day18.lisp
+   #+begin_src lisp :exports both :results output :tangle day18.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
      (defparameter *day18* (read-file "d18.txt"))
 
      (defun parse-line (line)
@@ -2352,8 +2360,10 @@ One attempt each.
    I probably need to check out [[https://github.com/Andrew-William-Smith/advent-of-code/blob/master/day19.lisp][Andrew Smith's solution]], but I'd really like to
    take /one/ more stab at it before throwing in the towel.
 
-   #+begin_src lisp :exports both :results output :tangle day19.lisp
-     (ql:quickload 'split-sequence :silent t)
+   #+begin_src lisp :exports both :results output :tangle day19.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defparameter *day19* (read-file "d19.txt"))
 
@@ -2472,8 +2482,10 @@ One attempt each.
    :ID:       DA33F1D0-C329-489B-8D82-DA8816AF6330
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day20.lisp
-     (ql:quickload 'split-sequence :silent t)
+   #+begin_src lisp :exports both :results output :tangle day20.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defun parse-input ()
        (labels ((load-data () (read-file "d20.txt"))
@@ -2509,15 +2521,15 @@ One attempt each.
 
 
      (defun count-hashes-nesw (tile-name)
-       (let ((tile (gethash tile-name *tbl*))
-             (east-west (loop for i from 0 to 9
-                           counting (char= (aref tile i 0) #\#) into west
-                           counting (char= (aref tile i 9) #\#) into east
-                           finally (return (cons east west))))
-             (north-south (loop for j from 0 to 9
-                             counting (char= (aref tile 0 j) #\#) into north
-                             counting (char= (aref tile 9 j) #\#) into south
-                             finally (return (cons north south)))))
+       (let* ((tile (gethash tile-name *tbl*))
+              (east-west (loop for i from 0 to 9
+                            counting (char= (aref tile i 0) #\#) into west
+                            counting (char= (aref tile i 9) #\#) into east
+                            finally (return (cons east west))))
+              (north-south (loop for j from 0 to 9
+                              counting (char= (aref tile 0 j) #\#) into north
+                              counting (char= (aref tile 9 j) #\#) into south
+                              finally (return (cons north south)))))
          (list (car north-south) (car east-west)
                (cdr north-south) (cdr east-west))))
 
@@ -2601,19 +2613,6 @@ One attempt each.
 
      (defparameter *tile-matches* (brute-tile-fits))
      (defparameter *tile-matches-dup* (brute-tile-fits-with-dups))
-
-     (mapcar #'(lambda (tile-name) (remove-if-not (in-cons-cell tile-name) *tile-matches-dup*)) (find-corners)) ;; orientation info for corners; 1873 is a top-left corner.
-
-
-     ;;;; pseudo code for part 2
-     ;;; loop through rows
-     ;;; loop through columns (starting with a top-left corner)
-     ;;; do:
-     ;;;     find neighbour of current corner
-     ;;;     orient neighbour
-     ;;;     save oriented neighbour
-
-
 
      (defun in-cons-cell (tile-name)
        #'(lambda (x) (or (= (caar x) tile-name)
@@ -2833,7 +2832,11 @@ One attempt each.
        (day20-part1)
        (day20-part2))
    #+end_src
-   
+
+   I introduced a bug related to the ~:rev~ / ~nil~ stuff. When I originally
+   constructed ~*tile-matches*~ I used one convention, but when building the
+   arrangement, I used a different convention. I've gotten two stars for it and
+   I'm too lazy to go back to sort things out.
 
 
 ** Day 21
@@ -2841,9 +2844,10 @@ One attempt each.
    :ID:       D91E6628-0E1F-4814-A868-2959148E2326
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day21.lisp
-
-     (ql:quickload 'split-sequence :silent t)
+   #+begin_src lisp :exports both :results output :tangle day21.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
 
      (defun parse-input ()
        (labels ((load-data () (read-file "d21.txt"))
@@ -2969,8 +2973,13 @@ One attempt each.
    :END:
 
 
-   #+begin_src lisp :exports both :results output :tangle day22.lisp
-     (ql:quickload 'split-sequence :silent t)
+   #+begin_src lisp :exports both :results output :tangle day22.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
+     (load "~/.sbclrc")
+     (ql:quickload "split-sequence")
+
+     (defparameter *deck1* nil)
+     (defparameter *deck2* nil)
 
      (defun parse-input ()
        (labels ((load-data () (read-file "d22.txt"))
@@ -3092,9 +3101,9 @@ One attempt each.
    :ID:       0C6A49D1-73DF-44A8-9826-6E7B69DC4045
    :END:
 
-   #+begin_src lisp :exports both :results output :tangle day23.lisp
+   #+begin_src lisp :exports both :results output :tangle day23.lisp :shebang "#!/usr/bin/env sbcl --script"
      ;;;; Parts 1 and 2
-
+     (load "my-utils.lisp")
      (defparameter *cups* nil)
 
      (defun initial-data (&optional debug)
@@ -3180,10 +3189,11 @@ One attempt each.
    : (DAY23-PART2) : -> 21273394210
    
 
-If inspiration becomes necessary
-- [[https://www.reddit.com/r/adventofcode/comments/kimluc/2020_day_23_solutions/][2020 Day 23 Solutions [reddit]​]]
-- [[https://gist.github.com/death/cc83f1d89c8b583ab646e9b116979d19][A very legible solution [GH Gist]​]]
-
+   I wound up using a hint from someone on the Reddit solutions /megathread/. I
+   forgot the trick of being able to use a vector as a linked list. I think most
+   of the computational effort for this problem may in fact come from some
+   simply instantiating the initial length 1e6 vector. The rest is 3e7 very fast
+   ~setf~-ing.
 
 
 ** Day xx
@@ -3193,7 +3203,7 @@ If inspiration becomes necessary
 
    This is a skeleton for easily creating the next day.
 
-   #+begin_src lisp :exports both :results output :tangle dayxx.lisp
+   #+begin_src lisp :exports both :results output :tangle dayxx.lisp :shebang "#!/usr/bin/env sbcl --script"
      (load "my-utils.lisp")
 
 

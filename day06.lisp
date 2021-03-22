@@ -1,12 +1,13 @@
+#!/usr/bin/env sbcl --script
 (load "my-utils.lisp")
+(load "~/.sbclrc")
+(ql:quickload "split-sequence")
 
 (defparameter *day6* (read-file "d6.txt") "Day 6 puzzle input")
 (defvar *lower*
   (loop with a = (char-code #\a)
         for i below 26
      collect (code-char (+ a i))))
-
-(ql:quickload 'split-sequence :silent t)
 
 (defun split-input-by-groups (data)
   "Return a list of lists from DATA, assuming each entry is a string."

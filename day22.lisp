@@ -1,4 +1,10 @@
-(ql:quickload 'split-sequence :silent t)
+#!/usr/bin/env sbcl --script
+(load "my-utils.lisp")
+(load "~/.sbclrc")
+(ql:quickload "split-sequence")
+
+(defparameter *deck1* nil)
+(defparameter *deck2* nil)
 
 (defun parse-input ()
   (labels ((load-data () (read-file "d22.txt"))

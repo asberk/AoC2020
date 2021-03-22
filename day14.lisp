@@ -1,4 +1,6 @@
-(ql:quickload 'split-sequence :silent t)
+#!/usr/bin/env sbcl --script
+(load "~/.sbclrc")
+(ql:quickload "split-sequence")
 
 (defparameter *day14* (read-file "d14.txt"))
 

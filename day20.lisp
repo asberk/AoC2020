@@ -1,4 +1,7 @@
-(ql:quickload 'split-sequence :silent t)
+#!/usr/bin/env sbcl --script
+(load "my-utils.lisp")
+(load "~/.sbclrc")
+(ql:quickload "split-sequence")
 
 (defun parse-input ()
   (labels ((load-data () (read-file "d20.txt"))
@@ -34,15 +37,15 @@
 
 
 (defun count-hashes-nesw (tile-name)
-  (let ((tile (gethash tile-name *tbl*))
-        (east-west (loop for i from 0 to 9
-                      counting (char= (aref tile i 0) #\#) into west
-                      counting (char= (aref tile i 9) #\#) into east
-                      finally (return (cons east west))))
-        (north-south (loop for j from 0 to 9
-                        counting (char= (aref tile 0 j) #\#) into north
-                        counting (char= (aref tile 9 j) #\#) into south
-                        finally (return (cons north south)))))
+  (let* ((tile (gethash tile-name *tbl*))
+         (east-west (loop for i from 0 to 9
+                       counting (char= (aref tile i 0) #\#) into west
+                       counting (char= (aref tile i 9) #\#) into east
+                       finally (return (cons east west))))
+         (north-south (loop for j from 0 to 9
+                         counting (char= (aref tile 0 j) #\#) into north
+                         counting (char= (aref tile 9 j) #\#) into south
+                         finally (return (cons north south)))))
     (list (car north-south) (car east-west)
           (cdr north-south) (cdr east-west))))
 
@@ -126,19 +129,6 @@
 
 (defparameter *tile-matches* (brute-tile-fits))
 (defparameter *tile-matches-dup* (brute-tile-fits-with-dups))
-
-(mapcar #'(lambda (tile-name) (remove-if-not (in-cons-cell tile-name) *tile-matches-dup*)) (find-corners)) ;; orientation info for corners; 1873 is a top-left corner.
-
-
-;;;; pseudo code for part 2
-;;; loop through rows
-;;; loop through columns (starting with a top-left corner)
-;;; do:
-;;;     find neighbour of current corner
-;;;     orient neighbour
-;;;     save oriented neighbour
-
-
 
 (defun in-cons-cell (tile-name)
   #'(lambda (x) (or (= (caar x) tile-name)

@@ -1,3 +1,4 @@
+#!/usr/bin/env sbcl --script
 (load "my-utils.lisp")
 
 (defparameter *test-cases* (list "FBFBBFFRLR" "BFFFBBFRRR" "FFFBBBFRRR" "BBFFBBFRLL"))

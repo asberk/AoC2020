@@ -1,5 +1,7 @@
+#!/usr/bin/env sbcl --script
 (load "my-utils.lisp")
-(ql:quickload 'split-sequence :silent t)
+(load "~/.sbclrc")
+(ql:quickload "split-sequence")
 
 (defun parse-instruction (line)
   (destructuring-bind (inst val) (split-sequence:split-sequence #\Space line)

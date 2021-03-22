@@ -1,6 +1,7 @@
-;; (load "my-utils.lisp")
-
-(ql:quickload 'split-sequence :silent t)
+#!/usr/bin/env sbcl --script
+(load "my-utils.lisp")
+(load "~/.sbclrc")
+(ql:quickload "split-sequence")
 
 (defparameter *day10* (mapcar #'parse-integer (read-file "d10.txt")))
 (defparameter *device-joltage* (+ 3 (apply #'max *day10*)))
