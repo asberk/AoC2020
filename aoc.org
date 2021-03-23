@@ -3195,6 +3195,203 @@ One attempt each.
    simply instantiating the initial length 1e6 vector. The rest is 3e7 very fast
    ~setf~-ing.
 
+** Day 24
+
+
+   #+begin_src lisp :exports both :results output :tangle day24.lisp :shebang "#!/usr/bin/env sbcl --script"
+     (load "my-utils.lisp")
+
+     ;;;; part 1
+
+     (defun fname (debug)
+       (if debug "d24.test" "d24.txt"))
+
+     (defun direction-names ()
+       (list :east
+             :north-east
+             :north-west
+             :west
+             :south-west
+             :south-east))
+
+     (defun get-angle (direction)
+       (cond ((eql direction :east) 0)
+             ((eql direction :west) pi)
+             ((eql direction :north-east) (/ pi 3))
+             ((eql direction :north-west) (* 2/3 pi))
+             ((eql direction :south-west) (* -2/3 pi))
+             ((eql direction :south-east) (* -1/3 pi))
+             (t (error "direction not recognized: ~a" direction))))
+
+     (defun get-vector (direction)
+       (let ((angle (get-angle direction)))
+         (cons (cos angle) (sin angle))))
+
+     (defun parse-input (&optional debug)
+       (labels ((load-data () (read-file (fname debug)))
+                (parse-direction (char-list)
+                  (cond ((and (find #\n char-list) (find #\e char-list)) :north-east)
+                        ((and (find #\n char-list) (find #\w char-list)) :north-west)
+                        ((and (find #\s char-list) (find #\e char-list)) :south-east)
+                        ((and (find #\s char-list) (find #\w char-list)) :south-west)
+                        ((find #\e char-list) :east)
+                        ((find #\w char-list) :west)
+                        (t (error "direction not recognized ~{~a~}" char-list))))
+                (parse-line (line)
+                  (loop with buffer = nil for c across line
+                     do (push c buffer)
+                     if (or (char= c #\e) (char= c #\w))
+                     collect (parse-direction (nreverse buffer))
+                     and do (setf buffer nil)))
+                (main () (mapcar #'parse-line (load-data))))
+         (main)))
+
+     (defun cons+ (&rest vectors)
+       (let ((cars (mapcar #'car vectors))
+             (cdrs (mapcar #'cdr vectors)))
+         (cons (apply #'+ cars) (apply #'+ cdrs))))
+
+     (defun round-to (number precision &optional (what #'round))
+       "From here: http://www.codecodex.com/wiki/Round_a_number_to_a_specific_decimal_place#Common_Lisp"
+       (let ((div (expt 10 precision)))
+         (/ (funcall what (* number div)) div)))
+
+     (defun cons-round (vector &optional (precision 4))
+       (cons (round-to (car vector) precision) (round-to (cdr vector) precision)))
+
+     (defun get-coords (directions)
+       (apply #'cons+ (mapcar #'get-vector directions)))
+
+     (defun get-rounded-coords (directions &optional (precision 4))
+       (cons-round (get-coords directions) precision))
+
+     (defun build-tile-flip-hash (&optional debug)
+       (let ((tile-coords (mapcar #'get-rounded-coords (parse-input debug)))
+             (h (make-hash-table :test 'equal)))
+         (loop for coord in tile-coords
+            do (if (null (gethash coord h))
+                   (setf (gethash coord h) 1)
+                   (incf (gethash coord h))))
+         h))
+
+     (defun count-black-tiles (hash)
+       (loop for val being the hash-values of hash
+          counting (and val (oddp val))))
+
+     (defun get-neighbours (coord)
+       (mapcar #'(lambda (direction) (cons-round (cons+ coord direction)))
+               (mapcar #'get-vector (direction-names))))
+
+     (defun num-black-neighbours (coord hash)
+       (let* ((neighbours (get-neighbours coord))
+              (flips (mapcar #'(lambda (neighbour) (gethash neighbour hash)) neighbours))
+              (num-black (count-if #'(lambda (val) (and val (oddp val))) flips)))
+         num-black))
+
+     (defun num-white-neighbours (coord hash)
+       (- 6 (num-black-neighbours coord hash)))
+
+     (defun black-p (coord hash)
+       (when coord
+         (let* ((val (gethash coord hash)))
+           (and val (oddp val)))))
+
+     (defun white-p (coord hash)
+       (when coord
+         (let* ((val (gethash coord hash)))
+           (or (null val) (and val (evenp val))))))
+
+     (defun refresh-hash (hash)
+       (loop for coord being the hash-keys of hash using (hash-value val)
+          if (black-p coord hash)
+          do (progn (setf (gethash coord hash) 1)
+                    (let ((neighbours (get-neighbours coord)))
+                      (loop for neighbour in neighbours
+                           for val = (gethash neighbour hash)
+                         if (null val) do (setf (gethash neighbour hash) 0)
+                         else do (setf (gethash neighbour hash) (mod val 2))))))
+       hash)
+
+     (defun two-norm (coord1 coord2)
+       (let ((x0 (car coord1))
+             (x1 (cdr coord1))
+             (y0 (car coord2))
+             (y1 (cdr coord2)))
+         (sqrt (+ (expt (- x0 y0) 2) (expt (- x1 y1) 2)))))
+
+     (defun pairwise-distances (hash)
+       (loop for coord1 being the hash-keys of hash
+          collect (loop for coord2 being the hash-keys of hash
+                     for dist = (two-norm coord1 coord2)
+                     if (> dist 0)
+                     collect (cons (list coord1 coord2) dist))
+          into result
+          finally (return (sort (apply #'append result) #'< :key #'cdr))))
+
+     ;;; refresh-hash creates problems due to the rounding error:
+     (car (pairwise-distances (refresh-hash (build-tile-flip-hash :debug))))
+     ;;; we need to find an alternative way. And it's probably going to come down to
+     ;;; array indexing :-(
+
+     (defun flip-black-p (coord hash)
+       (when (black-p coord hash)
+         (let ((num-black-neighbours (num-black-neighbours coord hash)))
+           (or (= num-black-neighbours 0) (> num-black-neighbours 2)))))
+
+     (gethash (cons 0 0) (build-tile-flip-hash))
+     (flip-black-p (cons 0 0) (build-tile-flip-hash))
+
+     (defun flip-white-p (coord hash)
+       (when (white-p coord hash)
+         (let ((num-black-neighbours (num-black-neighbours coord hash)))
+           (= num-black-neighbours 2))))
+
+     (defun update-tiles (hash)
+       (let ((h (make-hash-table :test #'equal)))
+         (loop for coord being the hash-keys of (refresh-hash hash)
+            using (hash-value val)
+            if (flip-black-p coord hash)
+            do (setf (gethash coord h) 0)
+            else if (flip-white-p coord hash)
+            do (setf (gethash coord h) 1)
+            else if (black-p coord hash)
+            do (setf (gethash coord h) 1)
+            else do (setf (gethash coord h) 0))
+         h))
+
+     (defun run-simulation (days &optional debug)
+       (let ((hash (build-tile-flip-hash debug)))
+         (when (= days 1)
+           (return-from run-simulation (count-black-tiles hash)))
+         (format t "Day 1: ~a~%" (count-black-tiles hash))
+         (loop for i from 1 below days
+            with black-tile-count = 0
+            do (setf hash (update-tiles hash))
+            do (setf black-tile-count (count-black-tiles hash))
+            do (format t "Day ~a: ~a~%" (1+ i) black-tile-count)
+            finally (return black-tile-count))))
+
+     (run-simulation 10 :debug)
+
+     ;;;; final
+
+     (defun day24-part1 (&optional debug)
+       (let ((h (build-tile-flip-hash debug)))
+         (count-black-tiles h)))
+
+     (defun day24-part2 ()
+       nil)
+
+     (verbose1
+       (day24-part1)
+       (day24-part2))
+   #+end_src
+   
+
+
+
+
+
 
 ** Day xx
    :PROPERTIES:
