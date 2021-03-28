@@ -3196,6 +3196,9 @@ One attempt each.
    ~setf~-ing.
 
 ** Day 24
+   :PROPERTIES:
+   :ID:       46D0E21B-F87B-4E80-B83A-809688ACF9E1
+   :END:
 
 
    #+begin_src lisp :exports both :results output :tangle day24.lisp :shebang "#!/usr/bin/env sbcl --script"
@@ -3287,16 +3290,23 @@ One attempt each.
          (let* ((val (gethash coord hash)))
            (or (null val) (and val (evenp val))))))
 
+     (defun get-hash-keys (hash)
+       (loop for key being the hash-keys of hash collect key))
+
      (defun refresh-hash (hash)
-       (loop for coord being the hash-keys of hash using (hash-value val)
-          if (black-p coord hash)
-          do (progn (setf (gethash coord hash) 1)
-                    (let ((neighbours (get-neighbours coord)))
-                      (loop for neighbour in neighbours
-                           for val = (gethash neighbour hash)
-                         if (null val) do (setf (gethash neighbour hash) 0)
-                         else do (setf (gethash neighbour hash) (mod val 2)))))
-          finally (return hash)))
+       ;; need to take this approach because we can't add/modify/remove entries of a
+       ;; hash table when iterating through it, except for the current entry pointed
+       ;; to by the iteration.
+       (let ((coords (get-hash-keys hash)))
+         (loop for coord in coords
+            if (black-p coord hash)
+            do (let ((neighbours (get-neighbours coord)))
+                 (setf (gethash coord hash) 1)
+                 (loop for neighbour in neighbours
+                    for val = (gethash neighbour hash)
+                    if (null val) do (setf (gethash neighbour hash) 0)
+                    else do (setf (gethash neighbour hash) (mod val 2))))
+            finally (return hash))))
 
      (defun two-norm (coord1 coord2)
        (let ((x0 (car coord1))
@@ -3315,11 +3325,13 @@ One attempt each.
           finally (return (sort (apply #'append result) #'< :key #'cdr))))
 
      (defun flip-black-p (coord hash)
+       "Determine if black tile at COORD should be flipped to white."
        (when (black-p coord hash)
          (let ((num-black-neighbours (num-black-neighbours coord hash)))
            (or (= num-black-neighbours 0) (> num-black-neighbours 2)))))
 
      (defun flip-white-p (coord hash)
+       "Determine if white tile at COORD should be flipped to black."
        (when (white-p coord hash)
          (let ((num-black-neighbours (num-black-neighbours coord hash)))
            (= num-black-neighbours 2))))
@@ -3333,23 +3345,23 @@ One attempt each.
             do (setf (gethash coord h) 0)
             else if (flip-white-p coord hash)
             do (setf (gethash coord h) 1)
-            else if (black-p coord hash)
+            else if (white-p coord hash)
+            do (setf (gethash coord h) 0)
+            else ;; if (black-p coord hash)
             do (setf (gethash coord h) 1)
-            else do (setf (gethash coord h) 0)
             finally (return h))))
 
-     (defun run-simulation (days &optional debug)
+     (defun run-simulation (days &optional debug verbose)
        (let ((hash (build-tile-flip-hash debug)))
-         (format t "Day 0: ~a~%" (count-black-tiles hash))
+         (when verbose (format t "Day 0: ~a~%" (count-black-tiles hash)))
          (when (zerop days)
            (return-from run-simulation hash))
          (loop for i from 1 to days
             with black-tile-count = 0
             do (setf hash (update-tiles hash))
             do (setf black-tile-count (count-black-tiles hash))
-            do (format t "Day ~a: ~a~%" i black-tile-count)
+            do (when verbose (format t "Day ~a: ~a~%" i black-tile-count))
             finally (return hash))))
-
 
      ;;;; final
 
@@ -3358,7 +3370,7 @@ One attempt each.
          (count-black-tiles h)))
 
      (defun day24-part2 ()
-       nil)
+       (count-black-tiles (run-simulation 100)))
 
      (verbose1
        (day24-part1)
@@ -3367,7 +3379,7 @@ One attempt each.
    
 
 
-
+Try... https://www.redblobgames.com/grids/hexagons/?
 
 
 
