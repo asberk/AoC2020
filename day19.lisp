@@ -1,114 +1,57 @@
-#!/usr/bin/env sbcl --script
 (load "my-utils.lisp")
 (load "~/.sbclrc")
 (ql:quickload "split-sequence")
 
-(defparameter *day19* (read-file "d19.txt"))
-
-(defun zero-length-p (sequence)
-  (zerop (length sequence)))
-
-(defun str-base-rule-p (rule-text)
-  (some #'(lambda (x) (find x rule-text)) (list #\a #\b)))
-
-(defun base-rule-p (rule)
-  (when (and (characterp (cdr rule))
-             (or (char= (cdr rule) #\a)
-                 (char= (cdr rule) #\b)))
-    (cdr rule)))
-
-(defun str-disjunction-p (rule-text)
-  (find #\| rule-text))
+(defun parse-rule (rule)
+  (loop
+     for pos = (position #\| rule) for subrule = (subseq rule 0 pos)
+     while (> (length subrule) 0)
+     collect (loop for letter across (concatenate 'string subrule " ")
+                with prev-nan = 0 for i from 0
+                if (and (not (digit-char-p letter)) (< prev-nan i))
+                collect (parse-integer (subseq rule prev-nan i))
+                if (not (digit-char-p letter))
+                do (setf prev-nan (+ i 1)))
+     do(setf rule (subseq rule (if pos (+ pos 1) (length rule))))))
 
 (defun parse-input ()
   (labels ((load-data ()
-             (destructuring-bind (rules messages)
-                 (split-sequence:split-sequence-if
-                  #'zero-length-p
-                  (read-file "d19.txt"))
-               (values rules messages)))
-           (parse-rule-text (rule-text)
-             (cond ((str-base-rule-p rule-text) (str-base-rule-p rule-text))
-                   ((str-disjunction-p rule-text)
-                    (mapcar #'(lambda (x) (if (string= x "|") #\| (parse-integer x)))
-                            (remove-if
-                             #'zero-length-p
-                             (split-sequence:split-sequence-if
-                              #'(lambda (x) (char= x #\Space))
-                              rule-text))))
-                   (t (mapcar #'parse-integer
-                              (split-sequence:split-sequence #\Space rule-text)))))
-           (parse-rule (rule-line)
-             (destructuring-bind (rule-name rule-text)
-                 (split-sequence:split-sequence #\: rule-line)
-               (cons (parse-integer rule-name) (parse-rule-text (subseq rule-text 1))))))
-    (multiple-value-bind (rules messages) (load-data)
-      (values (mapcar #'parse-rule rules) messages))))
+             (split-sequence:split-sequence-if
+              #'(lambda (line) (zerop (length line)))
+              (read-file "d19.txt")))
+           (parse-rules (rules)
+             (loop for line in rules for div = (position #\: line)
+                while (> (length line) 0)
+                collect (cons
+                         (parse-integer (subseq line 0 div))
+                         (if (position #\" line)
+                             (list (char line (+ div 3)))
+                             (parse-rule (subseq line (+ div 2))))))))
+    (destructuring-bind (rules texts) (load-data)
+      (defparameter *rules* (parse-rules rules))
+      texts)))
 
-(multiple-value-bind (rules messages) (parse-input)
-  (defparameter *rules* rules)
-  (defparameter *messages* messages))
+(defun check (id texts)
+  (when texts
+    (let ((rule (cdr (assoc id *rules*))))
+      (if (typep (car rule) 'character)
+          (map 'list #'(lambda (text) (subseq text 1))
+               (remove-if-not
+                #'(lambda (text)
+                    (and
+                     (> (length text) 0)
+                     (char= (car rule) (char text 0))))
+                texts))
+          (reduce 'union
+                  (map 'list #'(lambda (subrule)
+                                 (reduce #'check (reverse subrule)
+                                         :from-end t :initial-value texts))
+                       rule))))))
 
-*rules*
-
-(defun first-two (list)
-  (when (listp list)
-    (list (car list) (cadr list))))
-
-(defun last-two (list)
-  (when (listp list)
-    (let ((rev (reverse list)))
-      (list (cadr rev) (car rev)))))
-
-(defun build-tree (rule-number)
-  (let* ((rule (assoc rule-number *rules*))
-         (rule-body (cdr rule)))
-    (cond ((base-rule-p rule) (base-rule-p rule))
-          (t
-           (loop for number in rule-body
-              if (numberp number)
-              collect (build-tree number)
-              else collect #\|)))))
-
-(build-tree 0)
-
-;;;; tree snippet
-;; (#\b
-;;      (#\a (((#\a #\| #\b) (#\a #\| #\b)) #\a #\| (#\b #\b #\| #\a #\a) #\b)
-;;       #\| #\b (#\a (#\b #\a) #\| #\b (#\b #\b)))
-;;      #\| #\a
-;;      (#\a
-;;       ((#\a #\a #\| #\b (#\a #\| #\b)) #\b #\|
-;;        ((#\a #\| #\b) #\b #\| #\a #\a) #\a)
-;;       #\| #\b
-;;       (((#\a #\| #\b) (#\a #\| #\b)) #\a #\| (#\b #\b #\| #\a #\a) #\b)))
-
-;; 0: 4 1 5
-;; 1: 2 3 | 3 2
-;; 2: 4 4 | 5 5
-;; 3: 4 5 | 5 4
-;; 4: "a"
-;; 5: "b"
-;; 
-;;                     0
-;;     4               1               5
-;;     a     2     3   |   3     2     b
-;;         44|55 45|54   45|54 44|55
-;;         aa|bb ab|ba   ab|ba aa|bb
-;; ababbb
-;; bababa
-;; abbbab
-;; aaabbb
-;; aaaabbb
+(defun day19part1 ()
+  (loop for line in (parse-input) while line
+     count (loop for possibility in (check 0 (list line))
+              if(= 0 (length possibility)) return t
+              finally (return nil))))
 
 
-
-(defun day19-part1 ()
-  nil)
-
-(defun day19-part2 ()
-  nil)
-
-(verbose1
-  (day19-part1)
-  (day19-part2))
